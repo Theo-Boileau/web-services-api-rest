@@ -25,7 +25,12 @@ app.use(bodyParser.json())
 
 // import routes
 const objectRoutes = require('./routes/object');
+const userRoutes = require('./routes/user');
 
 app.use('/api/objects', objectRoutes);
+app.use('/api/auth', userRoutes);
 
 module.exports = app;
+
+// navigator.storage et/ou window.sessionStorage et/ou window.localStorage et/ou cookies
+//la meilleur = window.sessionStorage
