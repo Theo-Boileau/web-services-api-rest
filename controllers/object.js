@@ -27,7 +27,24 @@ exports.getObject = (req, res, next) => {
 }
 
 exports.createObject = (req, res, next) => {
-    res.status(200).json({message: "OK"});
+    console.log('calling createObject', req.body);
+
+    let obj = new Object({
+    name: req.body.name,
+    weight: req.body.weight,
+    url: req.body.url,
+    creationDate: new Date(),
+    modificationDate: new Date(),
+    active: true
+})
+
+    obj.save()
+        .then((saved) => {
+            res.status(200).json(saved);
+        })
+        .catch(() => {
+            res.status(500).json({message: 'REST API ERROR : creation error'});
+        })
 }
 
 exports.updateObject = (req, res, next) => {
