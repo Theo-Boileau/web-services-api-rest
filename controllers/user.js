@@ -7,7 +7,7 @@ const CLIENT_ID = process.env.CLIENT_ID;
 
 const client = new OAuth2Client(CLIENT_ID);
 
-async function verify(token, req, res){
+async function verify(token, req, res) {
     const ticket = await client.verifyIdToken({
         idToken: token,
         audience: CLIENT_ID
@@ -16,6 +16,45 @@ async function verify(token, req, res){
     const userid = payload['sub'];
 
     console.log(payload);
+
+    User.findOne({email: payload.email})
+        .then((user) => {
+            if (!user) {
+                //create user
+                req.body.email = payload.email;
+                req.body.name = payload.name;
+                req.body.password = payload.sub + new Date().getTime();
+                bcrypt.hash(req.body.password, 10)
+                    .then((hash) => {
+                        let user = new User({
+                            email: req.body.email,
+                            password: hash,
+                            name: req.body.name,
+                            creationDate: new Date(),
+                            modificationDate: new Date(),
+                            active: true
+                        });
+
+                        user.save()
+                            .then((saved) => {
+                                res.status(200).json(saved);
+                            })
+                            .catch(() => {
+                                res.status(500).json({message: 'REST API ERROR : creation error'});
+                            });
+                    })
+                    .catch((err) => {
+                        res.status(500).json({message: 'REST API ERROR : encrypting error'});
+                    })
+            } else {
+                const token = jsonWebToken.sign({userId: user._id}, 'RANDOM_TOKEN_SECRET', {expiresIn: '24h'});
+                user.password = '';
+                res.status(200).json({
+                    token: token,
+                    user: user
+                })
+            }
+        })
 }
 
 /**
@@ -68,6 +107,7 @@ exports.createUser = (req, res, next) => {
             let user = new User({
                 email: req.body.email,
                 password: hash,
+                name: req.body.name,
                 creationDate: new Date(),
                 modificationDate: new Date(),
                 active: true
@@ -98,8 +138,7 @@ exports.login = (req, res, next) => {
     let token = req.body.token;
 
     if (token) {
-        // verify(token, req, res).catch(console.log(error);
-        res.status(200).json({message: 'ok'});
+        verify(token, req, res).catch(console.error);
     } else {
         User.findOne({"email": req.body.email})
             .then((user) => {
