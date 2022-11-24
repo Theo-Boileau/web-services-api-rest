@@ -13,7 +13,7 @@ async function verify(token, req, res) {
         audience: CLIENT_ID
     });
     const payload = ticket.getPayload();
-    const userid = payload['sub'];
+    // const userid = payload['sub'];
 
     console.log(payload);
 
@@ -49,11 +49,15 @@ async function verify(token, req, res) {
             } else {
                 const token = jsonWebToken.sign({userId: user._id}, 'RANDOM_TOKEN_SECRET', {expiresIn: '24h'});
                 user.password = '';
+                // user.namae = payload.name;
                 res.status(200).json({
                     token: token,
                     user: user
                 })
             }
+        })
+        .catch((error) => {
+            res.status(500).json({message: 'Request Error'});
         })
 }
 

@@ -3,8 +3,6 @@ const User = require('../models/user');
 
 module.exports = (req, res, next) => {
     try {
-        console.log('I\'m a middleware');
-
         const email = req.headers.email;
         const token = req.headers.authorization;
         const decodeToken = jsonWebToken.verify(token, 'RANDOM_TOKEN_SECRET');
@@ -16,11 +14,11 @@ module.exports = (req, res, next) => {
                 if(email === user.email){
                     next();
                 }else {
-                    res.status(403);
+                    res.status(403).json({message: 'UNAUTHORIZED'});
                 }
             })
-            .catch(() => res.status(403))
+            .catch(() => res.status(403).json({message: 'UNAUTHORIZED'}))
     }catch {
-        res.status(403).json({message: 'middleware error'})
+        res.status(403).json({message: 'UNAUTHORIZED'});
     }
 }
