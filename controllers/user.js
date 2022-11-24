@@ -1,6 +1,22 @@
 const User = require('../models/user');
 const bcrypt = require('bcrypt');
 const jsonWebToken = require('jsonwebtoken');
+const {Oauth, OAuth2Client} = require('google-auth-library');
+
+const CLIENT_ID = process.env.CLIENT_ID;
+
+const client = new OAuth2Client(CLIENT_ID);
+
+async function verify(token, req, res){
+    const ticket = await client.verifyIdToken({
+        idToken: token,
+        audience: CLIENT_ID
+    });
+    const payload = ticket.getPayload();
+    const userid = payload['sub'];
+
+    console.log(payload);
+}
 
 /**
  * returns all users list
@@ -77,33 +93,42 @@ exports.createUser = (req, res, next) => {
  * @param next
  */
 exports.login = (req, res, next) => {
-    User.findOne({"email": req.body.email})
-        .then((user) => {
-            if (!user) {
-                res.status(401).json({message: 'USER RESULT NULL'});
-            } else {
-                bcrypt.compare(req.body.password, user.password)
-                    .then((valid) => {
-                        if (!valid) {
-                            res.status(500).json({message: 'REST API ERROR : COMPARISON FAILED'});
-                        } else {
-                            const token = jsonWebToken.sign({userId: user._id}, 'RANDOM_TOKEN_SECRET', {expiresIn: '24h'});
-                            res.status(200).json({
-                                token: token,
-                                user: user
-                            })
-                        }
-                    })
-                    .catch(() => {
-                        res.status(500).json({message: 'REST API ERROR : COMPARISON FAILED'});
-                    });
-            }
 
-        })
-        .catch((err) => {
-            console.log(err);
-            res.status(404).json({message: 'NOT FOUND'});
-        });
+    console.log(req.body);
+    let token = req.body.token;
+
+    if (token) {
+        // verify(token, req, res).catch(console.log(error);
+        res.status(200).json({message: 'ok'});
+    } else {
+        User.findOne({"email": req.body.email})
+            .then((user) => {
+                if (!user) {
+                    res.status(401).json({message: 'USER RESULT NULL'});
+                } else {
+                    bcrypt.compare(req.body.password, user.password)
+                        .then((valid) => {
+                            if (!valid) {
+                                res.status(500).json({message: 'REST API ERROR : COMPARISON FAILED'});
+                            } else {
+                                const token = jsonWebToken.sign({userId: user._id}, 'RANDOM_TOKEN_SECRET', {expiresIn: '24h'});
+                                res.status(200).json({
+                                    token: token,
+                                    user: user
+                                })
+                            }
+                        })
+                        .catch(() => {
+                            res.status(500).json({message: 'REST API ERROR : COMPARISON FAILED'});
+                        });
+                }
+
+            })
+            .catch((err) => {
+                console.log(err);
+                res.status(404).json({message: 'NOT FOUND'});
+            });
+    }
 }
 
 /**
